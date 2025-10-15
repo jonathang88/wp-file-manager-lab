@@ -1,0 +1,28 @@
+version: '3.7'
+services:
+  db:
+    image: mariadb:10.5
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wp
+      MYSQL_PASSWORD: wp
+    volumes:
+      - db_data:/var/lib/mysql
+  wordpress:
+    image: wordpress:5.8-php7.4-apache
+    depends_on:
+      - db
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: wp
+      WORDPRESS_DB_PASSWORD: wp
+      WORDPRESS_DB_NAME: wordpress
+    ports:
+      - "8080:80"
+    volumes:
+      - ./wp-content:/var/www/html/wp-content
+volumes:
+  db_data: {}
+
+# NOTE: This compose file is an example to setup an isolated lab. Do not expose it to production networks.
